@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+body {
+  background: linear-gradient(180deg, #e8ecf4 0%, #f6f7fb 100%);
+  background-attachment: fixed;
+  color: #1e293b;
+  /* Clean, ATS-friendly sans-serif stack that exists on Windows, macOS and Linux */
+  font-family: Calibri, Carlito, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* In-place editable text */
+.editable {
+  outline: none;
+  border-radius: 4px;
+  padding: 0 2px;
+  margin: 0 -2px;
+  transition: background-color 120ms, box-shadow 120ms;
+  overflow-wrap: anywhere;
+}
+.editable[contenteditable="plaintext-only"]:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.editable[contenteditable="plaintext-only"]:focus {
+  background: color-mix(in srgb, var(--accent) 10%, white);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, white);
+}
+.editable[contenteditable="plaintext-only"]:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+  pointer-events: none;
+}
+.editable.multiline {
+  white-space: pre-wrap;
+  display: block;
+}
+
+/* Editable text sitting on the gradient banner */
+.on-dark .editable[contenteditable="plaintext-only"]:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.on-dark .editable[contenteditable="plaintext-only"]:focus {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+.on-dark .editable[contenteditable="plaintext-only"]:empty::before {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@page {
+  size: A4;
+  margin: 10mm 0;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .cv-card {
+    width: 210mm !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Trim the name's line-box so the photo's top edge lines up with the top of the capital letters */
+.name-trim {
+  margin-top: -0.14em;
+}
+@supports (text-box: trim-start cap alphabetic) {
+  .name-trim {
+    margin-top: 0;
+    text-box: trim-start cap alphabetic;
+  }
+}
+
+/* "Classic" header: white background, dark text, coloured rule. Re-skins the banner's white-on-colour utilities. */
+.header-classic {
+  background: #fff;
+  color: #0f172a;
+  border-bottom: 4px solid var(--accent);
+}
+.header-classic .deco {
+  display: none;
+}
+.header-classic [class*="text-white"] {
+  color: #334155;
+  text-shadow: none;
+}
+.header-classic h1 {
+  color: #0f172a;
+}
+.header-classic .hl {
+  color: var(--ink);
+}
+.header-classic svg {
+  color: var(--ink);
+}
+.header-classic [class*="bg-white/15"] {
+  background: var(--tint);
+}
+.header-classic [class*="border-white"] {
+  border-color: #cbd5e1;
+}
+.header-classic [class*="ring-white"] {
+  --tw-ring-color: #e2e8f0;
+}
