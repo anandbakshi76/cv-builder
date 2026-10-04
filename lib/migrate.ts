@@ -1,9 +1,19 @@
 import { blankEducation, blankExperience, defaultCV, newId } from "./defaults";
-import { normDate } from "./dates";
+import { normDate as rawNormDate } from "./dates";
 import { THEMES } from "./themes";
 import type { CVData, Display, EducationItem, ExperienceItem } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+/**
+ * An earlier bug saved blank dates as "2001-01" (the browser parsed "" as Jan 2001). No real CV entry is dated
+ * Jan 2001, so that exact value is treated as blank and repaired on load.
+ */
+const normDate = (v: unknown): string => {
+  const n = rawNormDate(v);
+  return n === "2001-01" ? "" : n;
+};
+
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 const strs = (v: unknown): string[] => arr(v).filter((s) => typeof s === "string");

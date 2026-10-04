@@ -9,7 +9,11 @@ export type SaveStatus = "saved" | "unsaved" | "error";
 function load(): CVData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? migrate(JSON.parse(raw)) : defaultCV;
+    if (!raw) return defaultCV;
+    const migrated = migrate(JSON.parse(raw));
+    // Write the repaired data back right away if it contained the legacy "2001-01" blank-date bug.
+    if (raw.includes('"2001-01"')) localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return defaultCV;
   }

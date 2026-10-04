@@ -39,7 +39,7 @@ export function TagList({ tags, onChange, placeholder }: Props) {
       {tags.map((t) => (
         <span
           key={t}
-          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm transition ${
+          className={`tag-chip inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm transition ${
             active.has(t)
               ? "border-[var(--accent)] bg-[var(--ink)] text-white"
               : "border-[var(--accent)]/25 bg-[var(--tint)] text-[var(--ink)] hover:border-[var(--accent)]"

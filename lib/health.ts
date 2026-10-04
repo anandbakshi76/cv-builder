@@ -83,7 +83,7 @@ export function cvHealth(
       ok: h.links.some((l) => l.url.trim() && ["LinkedIn", "GitHub", "Website", "Portfolio"].includes(l.platform)),
     },
     {
-      label: "Career Snapshot (20–80 words)",
+      label: "Professional Summary (20–80 words)",
       tip: "Write 2–3 sentences, roughly 20–80 words: who you are, what you bring, what you want.",
       points: 10,
       ok: summaryWords >= 20 && summaryWords <= 80,

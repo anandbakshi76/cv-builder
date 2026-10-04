@@ -34,7 +34,7 @@ export const blankExperience = (): ExperienceItem => ({
 
 export const defaultCV: CVData = {
   schemaVersion: 1,
-  header: { name: "", headline: "", highlights: "", availability: "", workEligibility: "", email: "", phone: "", location: "", dateOfBirth: "", address: "", photo: "", links: [] },
+  header: { name: "", headline: "", highlights: "", availability: "", workEligibility: "", nationality: "", visaStatus: "", email: "", phone: "", location: "", dateOfBirth: "", address: "", photo: "", links: [] },
   stats: [],
   summary: "",
   education: [

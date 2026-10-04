@@ -18,7 +18,7 @@ export const has = {
 };
 
 export const hasHeader = (d: CVData) =>
-  filled(d.header.name, d.header.headline, d.header.highlights, d.header.availability, d.header.workEligibility, d.header.email, d.header.phone, d.header.location, d.header.dateOfBirth, d.header.address, d.header.photo) ||
+  filled(d.header.name, d.header.headline, d.header.highlights, d.header.availability, d.header.workEligibility, d.header.nationality, d.header.visaStatus, d.header.email, d.header.phone, d.header.location, d.header.dateOfBirth, d.header.address, d.header.photo) ||
   d.header.links.length > 0;
 
 /**

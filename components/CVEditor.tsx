@@ -11,6 +11,7 @@ import { BulletList } from "./BulletList";
 import { DateField, DatePill, DateRange, FullDateField } from "./DateField";
 import { Editable, EditContext, useEditing } from "./Editable";
 import { PhotoUpload } from "./PhotoUpload";
+import { PrintOptions, usePrintPrefs } from "./PrintOptions";
 import { AddButton, Label, RemoveButton, Section } from "./Section";
 import { PLATFORMS, SocialIcon } from "./SocialIcon";
 import { TagList } from "./TagList";
@@ -38,6 +39,8 @@ const PAGE_PX = Math.round(((297 - 20) * 96) / 25.4);
 const ICONS: Record<string, string> = {
   mail: "M3 6h18v12H3zM3 7l9 6 9-6",
   phone: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z",
+  badge: "M4 5h16v14H4zM8 10h8M8 14h5",
+  globe: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",
   clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",
   check: "M5 12.5l4.5 4.5L19 7.5",
   calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
@@ -58,6 +61,7 @@ export default function CVEditor() {
   const [editing, setEditing] = useState(true);
   const [showHealth, setShowHealth] = useState(false);
   const [docHeight, setDocHeight] = useState(0);
+  const [printPrefs, setPrintPrefs] = usePrintPrefs();
 
   // Hidden, fixed-width (A4 width) preview copy: its height gives the real printed length.
   const measureRef = useCallback((el: HTMLElement | null) => {
@@ -71,7 +75,20 @@ export default function CVEditor() {
 
   const personName = data?.header.name.trim();
   useEffect(() => {
-    document.title = personName ? `${personName} – CV` : "CV Builder";
+    const title = personName ? `${personName} – CV` : "CV Builder";
+    const apply = () => {
+      if (document.title !== title) document.title = title;
+    };
+    apply();
+    // The framework re-writes its own <title> after hydration, so keep ours in place (and re-apply at print
+    // time): the PDF's title and default file name come from document.title (Print button and Ctrl+P).
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    window.addEventListener("beforeprint", apply);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("beforeprint", apply);
+    };
   }, [personName]);
 
   if (!data) return <div className="p-10 text-center text-slate-500">Loading…</div>;
@@ -81,7 +98,7 @@ export default function CVEditor() {
   const health = cvHealth(data, pages);
 
   const print = () => {
-    // Always print the clean Preview, not the editing controls.
+    // Always print the clean View, not the editing controls.
     const was = editing;
     setEditing(false);
     setTimeout(() => {
@@ -93,6 +110,9 @@ export default function CVEditor() {
   return (
     <EditContext.Provider value={editing}>
       <div
+        data-print={printPrefs.style}
+        data-photo={printPrefs.photo ? "show" : "hide"}
+        data-personal={printPrefs.personal ? "show" : "hide"}
         style={{ "--accent": theme.accent, "--accent2": theme.accent2, "--tint": theme.tint, "--ink": theme.ink } as React.CSSProperties}
         className="min-h-screen"
       >
@@ -112,7 +132,7 @@ export default function CVEditor() {
               <div className="inline-flex overflow-hidden rounded-full border border-slate-300">
                 {[
                   [true, "Edit"],
-                  [false, "Preview"],
+                  [false, "View"],
                 ].map(([v, label]) => (
                   <button
                     key={String(label)}
@@ -140,6 +160,7 @@ export default function CVEditor() {
               >
                 CV strength: <strong style={{ color: health.score >= 80 ? "#047857" : health.score >= 50 ? "#b45309" : "#be123c" }}>{health.score}%</strong>
               </button>
+              <PrintOptions prefs={printPrefs} onChange={setPrintPrefs} />
               <button type="button" onClick={print} className="cursor-pointer rounded-full border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">
                 Print
               </button>
@@ -241,14 +262,16 @@ function CVDocument({
               subtitle={<Editable value={x.company} onChange={(company) => patch(key, x.id, { company })} placeholder="Add company / organisation" />}
               right={<DateRange from={x.from} to={x.to} onChange={(p) => patch(key, x.id, p)} label={noun} />}
             />
-            <div className="mt-3 text-slate-600">
-              {editing && <SubLabel>Key tasks, activities &amp; responsibilities (Enter = new bullet)</SubLabel>}
-              <BulletList
-                items={x.responsibilities}
-                onChange={(responsibilities) => patch(key, x.id, { responsibilities })}
-                placeholder="Add a key task or responsibility"
-              />
-            </div>
+            {(editing || nonBlank(x.responsibilities).length > 0) && (
+              <div className="mt-3 text-slate-600">
+                {editing && <SubLabel>Key tasks, activities &amp; responsibilities (Enter = new bullet)</SubLabel>}
+                <BulletList
+                  items={x.responsibilities}
+                  onChange={(responsibilities) => patch(key, x.id, { responsibilities })}
+                  placeholder="Add a key task or responsibility"
+                />
+              </div>
+            )}
             <TagsRow
               label="Key Technologies:"
               tags={x.technologies}
@@ -296,7 +319,7 @@ function CVDocument({
     .map((x) => folded(x.name.trim(), [x.provider.trim(), fmtMonth(x.completed)]));
   const foldedLine = (label: string, items: string[]) =>
     !editing && items.length > 0 ? (
-      <p className="mt-1.5 text-[0.95rem] text-slate-600">
+      <p className="folded-line mt-1.5 text-[0.95rem] text-slate-600">
         <strong className="text-slate-700">{label}</strong> {items.join(", ")}
       </p>
     ) : null;
@@ -315,7 +338,7 @@ function CVDocument({
     ) : null;
 
   const typeTag = (text: string) => (
-    <span className="mr-2 rounded bg-white px-1.5 py-px align-middle text-[10px] font-semibold uppercase tracking-wide text-[var(--ink)] ring-1 ring-[var(--accent)]/30">
+    <span className="type-tag mr-2 rounded bg-white px-1.5 py-px align-middle text-[10px] font-semibold uppercase tracking-wide text-[var(--ink)] ring-1 ring-[var(--accent)]/30">
       {text}
     </span>
   );
@@ -409,7 +432,7 @@ function CVDocument({
                 Completed
                 <DateField value={x.completed} onChange={(completed) => patch("trainings", x.id, { completed })} label="Completion date" />
               </label>
-              {displayPicker(x.display, (display) => patch("trainings", x.id, { display }), 'In "Other courses" line')}
+              {displayPicker(x.display, (display) => patch("trainings", x.id, { display }), 'In "Other trainings" line')}
             </div>
           ) : (
             x.completed && <span className="whitespace-nowrap text-sm text-slate-500">{fmtMonth(x.completed)}</span>
@@ -461,24 +484,11 @@ function CVDocument({
               <Contact icon="mail" value={h.email} onChange={(email) => setHeader({ email })} placeholder="Add your email" />
               <Contact icon="phone" value={h.phone} onChange={(phone) => setHeader({ phone })} placeholder="Add your phone" />
               <Contact icon="pin" value={h.location} onChange={(location) => setHeader({ location })} placeholder="Add your location" />
-              {(editing || h.dateOfBirth) && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon name="calendar" />
-                  {editing && <span>Born:</span>}
-                  <FullDateField value={h.dateOfBirth} onChange={(dateOfBirth) => setHeader({ dateOfBirth })} label="Date of birth" />
-                </span>
-              )}
-              <Contact icon="home" value={h.address} onChange={(address) => setHeader({ address })} placeholder="Add home address (optional)" />
-              {editing && (
-                <span className="text-[11px] italic leading-tight text-white/80">
-                  Date of birth and address are optional; UK/US employers usually don&apos;t need them.
-                </span>
-              )}
             </div>
           </div>
-          {(editing || h.links.length > 0) && (
+          {(editing || h.links.some((l) => l.url.trim())) && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
-              {h.links.map((l) => (
+              {h.links.filter((l) => editing || l.url.trim()).map((l) => (
                 <span key={l.id} className="inline-flex items-center gap-1.5">
                   <SocialIcon platform={l.platform} size={18} />
                   {editing ? (
@@ -528,10 +538,11 @@ function CVDocument({
     </header>
 
     {/* QUICK FACTS STRIP: availability + work eligibility, right under the banner */}
-    {(editing || h.availability.trim() || h.workEligibility.trim()) && (
+    {(editing || h.availability.trim() || h.workEligibility.trim() || h.visaStatus.trim()) && (
       <div className="flex flex-wrap gap-x-8 gap-y-1 border-b border-[var(--accent)]/15 bg-[var(--tint)] px-5 py-2 text-sm font-medium text-slate-700 sm:px-10 [&_svg]:text-[var(--ink)]">
         <Contact icon="clock" value={h.availability} onChange={(availability) => setHeader({ availability })} placeholder="Add availability, e.g. Weekends & evenings, up to 20 hrs/week" />
         <Contact icon="check" value={h.workEligibility} onChange={(workEligibility) => setHeader({ workEligibility })} placeholder="Add work eligibility, e.g. Right to work in the UK" />
+        <Contact icon="badge" label="Visa / work status:" value={h.visaStatus} onChange={(visaStatus) => setHeader({ visaStatus })} placeholder="Add visa / work status (optional), e.g. Student visa, up to 20 hrs/week in term" />
       </div>
     )}
 
@@ -541,7 +552,7 @@ function CVDocument({
       )}
 
       {/* AT A GLANCE: headline numbers, optional */}
-      <Section title="Impact at a Glance" visible={show(has.stats(data))} compact hideTitle={!editing}>
+      <Section title="Key Highlights" visible={show(has.stats(data))} compact hideTitle={!editing}>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {data.stats
             .filter((x) => editing || x.value.trim() || x.label.trim())
@@ -565,7 +576,7 @@ function CVDocument({
       </Section>
 
       {/* 1. CAREER SNAPSHOT */}
-      <Section title="Career Snapshot" visible={show(has.summary(data))}>
+      <Section title="Professional Summary" visible={show(has.summary(data))}>
         <p className="leading-relaxed text-slate-700">
           <Editable
             multiline
@@ -645,6 +656,7 @@ function CVDocument({
                   )}
                 </div>
               )}
+              {(editing || x.current || x.grades.trim() || x.coursework.trim() || x.notes.trim()) && (
               <div className="mt-3 space-y-0.5 text-slate-600">
                 {!editing && x.current && <p className="text-sm">Year {x.yearOfStudy} of {x.courseLength}</p>}
                 <FieldLine label="Grades:" show={!!x.grades.trim()}>
@@ -657,6 +669,7 @@ function CVDocument({
                   <Editable multiline value={x.notes} onChange={(notes) => patch("education", x.id, { notes })} placeholder="Add honours, dissertation or other achievements (optional)" />
                 </FieldLine>
               </div>
+            )}
             </Card>
           ))}
         </div>
@@ -664,7 +677,7 @@ function CVDocument({
       </Section>
 
       {/* 3 + 4. EXPERIENCE */}
-      {experienceSection("experience", "Core Experience", "Add Experience", "experience")}
+      {experienceSection("experience", "Work Experience", "Add Experience", "experience")}
       {experienceSection("internships", "Internships", "Add Internship", "internship")}
 
       {/* 5. PROJECTS */}
@@ -677,9 +690,11 @@ function CVDocument({
                 subtitle={<Editable value={x.organization} onChange={(organization) => patch("projects", x.id, { organization })} placeholder="Add school / organisation / company where this was done" />}
                 right={<DateRange from={x.from} to={x.to} onChange={(p) => patch("projects", x.id, p)} label="Project" />}
               />
-              <p className="mt-2 text-slate-600">
-                <Editable multiline value={x.description} onChange={(description) => patch("projects", x.id, { description })} placeholder="Add a short project summary: what it does and why it matters" />
-              </p>
+              {(editing || x.description.trim()) && (
+                <p className="mt-2 text-slate-600">
+                  <Editable multiline value={x.description} onChange={(description) => patch("projects", x.id, { description })} placeholder="Add a short project summary: what it does and why it matters" />
+                </p>
+              )}
               {(editing || nonBlank(x.details).length > 0) && (
                 <div className="mt-2 text-slate-600">
                   {editing && <SubLabel>Project details: your role, what you built, results (Enter = new bullet)</SubLabel>}
@@ -731,7 +746,7 @@ function CVDocument({
             {data.trainings.map((x) => trainingRow(x, true))}
           </div>
           {foldedLine("Other certifications:", certFolded)}
-          {foldedLine("Other courses:", trainFolded)}
+          {foldedLine("Other Trainings:", trainFolded)}
           <div className="flex flex-wrap gap-2">
             <AddButton label="Add Certification" onClick={addCert} />
             <AddButton label="Add Training / Course" onClick={addTraining} />
@@ -745,9 +760,9 @@ function CVDocument({
             {foldedLine("Other certifications:", certFolded)}
             <AddButton label="Add Certification" onClick={addCert} />
           </Section>
-          <Section title="Trainings & Courses" visible={show(has.trainings(data))}>
+          <Section title="Training & Courses" visible={show(has.trainings(data))}>
             <div className={editing ? "space-y-3" : "space-y-1.5"}>{data.trainings.map((x) => trainingRow(x, false))}</div>
-            {foldedLine("Other courses:", trainFolded)}
+            {foldedLine("Other Trainings:", trainFolded)}
             <AddButton label="Add Training / Course" onClick={addTraining} />
           </Section>
         </>
@@ -789,14 +804,47 @@ function CVDocument({
                 title={<Editable value={x.activity} onChange={(activity) => patch("extracurricular", x.id, { activity })} placeholder="Add activity (sport, hobby, volunteering)" />}
                 right={<DateRange from={x.from} to={x.to} onChange={(p) => patch("extracurricular", x.id, p)} label="Activity" />}
               />
-              <p className="mt-1 text-slate-600">
-                <Editable multiline value={x.description} onChange={(description) => patch("extracurricular", x.id, { description })} placeholder="Add a short description" />
-              </p>
+              {(editing || x.description.trim()) && (
+                <p className="mt-1 text-slate-600">
+                  <Editable multiline value={x.description} onChange={(description) => patch("extracurricular", x.id, { description })} placeholder="Add a short description" />
+                </p>
+              )}
             </Card>
           ))}
         </div>
         <AddButton label="Add Activity" onClick={() => add("extracurricular", { activity: "", description: "", from: "", to: "" })} />
       </Section>
+
+      {/* 11. PERSONAL DETAILS: optional, last; can be left out of a printout from Print options */}
+      <div className="cv-personal">
+        <Section title="Personal Details" visible={show(Boolean(h.dateOfBirth || h.address.trim() || h.nationality.trim()))}>
+          <div className="flex flex-wrap gap-x-8 gap-y-1.5 text-slate-700">
+            {(editing || h.dateOfBirth) && (
+              <span>
+                <Label>Date of birth: </Label>
+                <FullDateField value={h.dateOfBirth} onChange={(dateOfBirth) => setHeader({ dateOfBirth })} label="Date of birth" />
+              </span>
+            )}
+            {(editing || h.nationality.trim()) && (
+              <span>
+                <Label>Nationality: </Label>
+                <Editable value={h.nationality} onChange={(nationality) => setHeader({ nationality })} placeholder="Add nationality (optional)" />
+              </span>
+            )}
+            {(editing || h.address.trim()) && (
+              <span>
+                <Label>Address: </Label>
+                <Editable value={h.address} onChange={(address) => setHeader({ address })} placeholder="Add home address (optional)" />
+              </span>
+            )}
+          </div>
+          {editing && (
+            <p className="no-print mt-2 text-xs italic text-slate-400">
+              Optional. UK and US employers usually don&apos;t need these, and never a passport number. Untick &quot;Include personal details&quot; in Print options to leave this block out of a PDF.
+            </p>
+          )}
+        </Section>
+      </div>
 
       {editing && <AddMissing data={data} />}
     </div>
@@ -917,12 +965,13 @@ function ThemePicker({
   );
 }
 
-function Contact({ icon, value, onChange, placeholder }: { icon: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+function Contact({ icon, value, onChange, placeholder, label }: { icon: string; value: string; onChange: (v: string) => void; placeholder: string; label?: string }) {
   const editing = useEditing();
   if (!editing && !value.trim()) return null;
   return (
     <span className="inline-flex items-center gap-1.5">
       <Icon name={icon} />
+      {label && <span className="text-slate-500">{label}</span>}
       <Editable value={value} onChange={onChange} placeholder={placeholder} />
     </span>
   );
@@ -931,7 +980,7 @@ function Contact({ icon, value, onChange, placeholder }: { icon: string; value: 
 /** Edit mode only: a hint that empty sections will not appear in Preview. */
 function AddMissing({ data }: { data: CVData }) {
   const empty = [
-    !data.experience.length && "Core Experience",
+    !data.experience.length && "Work Experience",
     !data.internships.length && "Internships",
     !data.projects.length && "Projects",
     !data.certifications.length && "Certifications",
@@ -942,7 +991,7 @@ function AddMissing({ data }: { data: CVData }) {
   if (!empty.length) return null;
   return (
     <p className="no-print mt-10 text-center text-xs text-slate-400">
-      Empty sections ({empty.join(", ")}) are hidden in Preview until you add content.
+      Empty sections ({empty.join(", ")}) are hidden in View mode until you add content.
     </p>
   );
 }
@@ -952,7 +1001,7 @@ function Card({ children, onRemove, label, thin, dense, muted }: { children: Rea
   const editing = useEditing();
   return (
     <div
-      className={`relative break-inside-avoid ${muted ? "opacity-50" : ""} rounded-md bg-slate-50 border-[var(--accent)] ${dense ? (editing ? "border-l-[3px] p-3" : "border-l-[3px] px-3 py-1.5") : thin ? "border-l-[3px] p-3" : "border-l-4 p-4"} ${editing ? "pr-10" : ""}`}
+      className={`relative break-inside-avoid ${!thin && !dense ? "card-split" : ""} ${muted ? "opacity-50" : ""} rounded-md bg-slate-50 border-[var(--accent)] ${dense ? (editing ? "border-l-[3px] p-3" : "border-l-[3px] px-3 py-1.5") : thin ? "border-l-[3px] p-3" : "border-l-4 p-4"} ${editing ? "pr-10" : ""}`}
     >
       {children}
       {editing && (
@@ -967,7 +1016,7 @@ function Card({ children, onRemove, label, thin, dense, muted }: { children: Rea
 /** Title (bold) + subtitle (accent colour) on the left, date/pill on the right. */
 function CardHead({ title, subtitle, right }: { title: React.ReactNode; subtitle?: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+    <div className="card-head flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
         <div className="text-[1.1rem] font-semibold leading-snug text-slate-800">{title}</div>
         {subtitle && <div className="font-medium text-[var(--ink)]">{subtitle}</div>}

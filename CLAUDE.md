@@ -3,7 +3,7 @@
 Single-page, click-to-edit CV for a UK/US-style student CV. Next.js (App Router) + TypeScript + Tailwind v4. No backend, no login: data lives in `localStorage` under `cv-builder:v1`.
 
 ## Project phases and working rules (owner's instructions, apply to every later prompt)
-The project is built in 6 phases. **Phase 1 is complete and frozen** as the base: see `docs/PHASE-1-FROZEN-BASELINE.md` and git tag `phase-1-base`. Work in manual mode, prompt by prompt, until prompt/phase 6 is done:
+The project is built in 6 phases. **Phase 1 is complete and frozen** as the base: see `docs/PHASE-1-FROZEN-BASELINE.md` and git tag `phase-1-base`. **Phase 2 (View mode, print options, ATS-friendly PDF) is complete**: git tag `phase-2`, details in `docs/2026-10-03-cv-display.md`. The same rules apply to everything built so far. Work in manual mode, prompt by prompt, until prompt/phase 6 is done:
 1. **Additive and non-disruptive** (new, useful functionality that leaves existing behaviour, sections, settings, themes, data and look unchanged): go ahead and build it.
 2. **Anything that changes, removes or could negatively disrupt existing Phase 1 behaviour** (settings, sections, themes, data model, saved data, layout, defaults): do NOT make the change. First review and analyse it, tell the owner the impact, and ask for approval.
 3. Keep saved data compatible: new fields need defaults and a `lib/migrate.ts` step; never rename or drop existing fields or the `cv-builder:v1` key without approval.
@@ -16,8 +16,8 @@ The project is built in 6 phases. **Phase 1 is complete and frozen** as the base
 
 ## Structure
 - `app/page.tsx` — renders `<CVEditor />`; `app/globals.css` — Tailwind import, `.editable` styles, print CSS
-- `components/CVEditor.tsx` — the whole page: toolbar (save status, theme swatches, Edit/Preview, Print, Reset), gradient header banner, all sections in CV order, plus `Card`/`CardHead`/`TagsRow` helpers (template-style grey card with accent bar, bold title, accent subtitle, white date pill)
-- `components/Editable.tsx` — in-place text (uncontrolled `contentEditable="plaintext-only"`); also owns `EditContext`. In Preview, an empty `Editable` renders nothing. Supports `onEnter` / `onBackspaceEmpty` / `autoFocus` for bullets
+- `components/CVEditor.tsx` — the whole page: toolbar (save status, theme swatches, Edit/View, Print, Reset), gradient header banner, all sections in CV order, plus `Card`/`CardHead`/`TagsRow` helpers (template-style grey card with accent bar, bold title, accent subtitle, white date pill)
+- `components/Editable.tsx` — in-place text (uncontrolled `contentEditable="plaintext-only"`); also owns `EditContext`. In View, an empty `Editable` renders nothing. Supports `onEnter` / `onBackspaceEmpty` / `autoFocus` for bullets
 - `components/BulletList.tsx` — bullet editor (Enter = next bullet, Backspace on empty removes)
 - `components/DateField.tsx` — `DateField` (native month calendar, `type="month"`), `DateRange` (from/to + "Ongoing" checkbox storing `"present"`), `DatePill`
 - `components/SocialIcon.tsx` — brand-coloured circular icons + `PLATFORMS`
@@ -31,15 +31,15 @@ The project is built in 6 phases. **Phase 1 is complete and frozen** as the base
 - `lib/useCV.ts` — loads (via `migrate`) after mount, debounced (400 ms) save, `saved | unsaved | error` status, flush on `pagehide`
 
 ## Section order (do not reorder casually)
-Header banner (name, aim, key-positions line, contact, social links) → quick-facts strip (availability, work eligibility) → Impact at a Glance (optional stat tiles) → Career Snapshot → Education → Core Experience → Internships → Projects → Skills → Certifications → Trainings & Courses → Awards & Recognition → Extracurricular & Volunteering.
+Header banner (name, aim, key-positions line, email, phone, city, social links) → quick-facts strip (availability, work eligibility) → Key Highlights (optional stat tiles) → Professional Summary → Education → Work Experience → Internships → Projects → Skills → Certifications → Training & Courses → Awards & Recognition → Extracurricular & Volunteering → Personal Details (optional, last: date of birth, address, nationality).
 Rationale in `docs/2026-10-03-cv-builder-core.md`.
 
 ## Visibility rule
-Edit mode shows every section (empty ones as "Add your…" placeholders). Preview mode shows a section only if `has.<section>(data)` is true, and hides empty fields inside it. List sections are visible when their array is non-empty.
+Edit mode shows every section (empty ones as "Add your…" placeholders). View mode shows a section only if `has.<section>(data)` is true, and hides empty fields inside it. List sections are visible when their array is non-empty.
 
 ## Data model (`CVData`, `schemaVersion: 1`)
-`header` (name, headline, highlights, availability, workEligibility, email, phone, location, dateOfBirth, address, photo, `links[]` = `{id, platform, url}`) · `summary` · `education[]` (degree, institution, current, yearOfStudy, courseLength, end, grades, coursework, notes) · `skills` (technical/languages/soft) · `theme` · `experience[]` and `internships[]` (title, company, from, to, `responsibilities[]`, `technologies[]`, `skills[]`, `outcomes[]`) · `stats[]` (value, label) · `projects[]` (organization, description, details[], tech[], from/to) · `certifications[]` (validFrom, validTill, lifetime) · `trainings[]` (completed) · `awards[]` · `extracurricular[]` (from/to). List items carry a stable `id`.
-All dates are `"YYYY-MM"`; end dates may be `"present"`. Part-time jobs go in Core Experience (there is no separate part-time section).
+`header` (name, headline, highlights, availability, workEligibility, nationality, visaStatus, email, phone, location, dateOfBirth, address, photo, `links[]` = `{id, platform, url}`) · `summary` · `education[]` (degree, institution, current, yearOfStudy, courseLength, end, grades, coursework, notes) · `skills` (technical/languages/soft) · `theme` · `experience[]` and `internships[]` (title, company, from, to, `responsibilities[]`, `technologies[]`, `skills[]`, `outcomes[]`) · `stats[]` (value, label) · `projects[]` (organization, description, details[], tech[], from/to) · `certifications[]` (validFrom, validTill, lifetime) · `trainings[]` (completed) · `awards[]` · `extracurricular[]` (from/to). List items carry a stable `id`.
+All dates are `"YYYY-MM"`; end dates may be `"present"`. Part-time jobs go in Work Experience (there is no separate part-time section).
 
 ## Migration
 `lib/migrate.ts` handles earlier saves: single education object → `education[]`, free-text `description` → bullet `responsibilities`, text dates → `YYYY-MM`, `date`/`dates`/`duration` → new date fields. Add a new step there whenever a field is renamed.
@@ -48,10 +48,13 @@ All dates are `"YYYY-MM"`; end dates may be `"present"`. Part-time jobs go in Co
 `lib/themes.ts` holds 10 themes plus `THEME_GROUPS` (Conservative / Creative); the toolbar `ThemePicker` popover in `CVEditor.tsx` sets `theme` and `headerStyle` (`banner` | `classic`). `.header-classic` in `globals.css` overrides the banner's `text-white` / `bg-white/15` / `border-white` utilities, so when adding banner markup keep using those utilities (or add a matching override) and mark decorations with `.deco` and the accent line with `.hl`.
 
 ## Certifications and trainings
-Two arrays (`certifications[]`, `trainings[]`), each entry with `display: "row" | "line" | "hide"`. Rows render compactly; `line` entries are folded into one "Other courses:" / "Other certifications:" line; `hide` entries stay in the data but are skipped in Preview/print. `mergeCertTraining` renders both in one "Certifications & Training" section with a type tag per entry. `has.certifications` / `has.trainings` ignore hidden entries.
+Two arrays (`certifications[]`, `trainings[]`), each entry with `display: "row" | "line" | "hide"`. Rows render compactly; `line` entries are folded into one "Other Trainings:" / "Other certifications:" line; `hide` entries stay in the data but are skipped in View/print. `mergeCertTraining` renders both in one "Certifications & Training" section with a type tag per entry. `has.certifications` / `has.trainings` ignore hidden entries.
+
+## View mode, print options and ATS print (Phase 2)
+Edit | View is the only mode switch (View = read-only, formerly "Preview"). The toolbar "Print options" popover (`components/PrintOptions.tsx`, own key `cv-builder:print-prefs:v1`) sets `style` (`bw` default | `colour`), `photo` (default off) and `personal` (include the Personal Details block, default on); `CVEditor` puts them on the root wrapper as `data-print` / `data-photo`, and `app/globals.css` styles the printout from those attributes inside `@media print`. Colour = the Phase 1 look; B&W = plain ATS-friendly text, 10.5 pt body, 14 pt headings, 24 pt name, own named `@page cvbw` with zero margin. ATS lessons that must not regress: keep `position: static` for positioned elements in B&W print (otherwise PDF text order scrambles) and keep ligatures off. Details and test method: `docs/2026-10-03-cv-display.md`.
 
 ## Page counter
-`CVEditor` renders `CVDocument` twice: the visible one, and a hidden 794 px-wide Preview copy measured with `ResizeObserver` (`PAGE_PX` = 277 mm of A4 at 96 dpi). Pages = ceil(height / PAGE_PX). Print CSS: `@page { size: A4; margin: 10mm 0 }`, card forced to 210 mm. Cards use `break-inside-avoid`.
+`CVEditor` renders `CVDocument` twice: the visible one, and a hidden 794 px-wide View copy measured with `ResizeObserver` (`PAGE_PX` = 277 mm of A4 at 96 dpi). Pages = ceil(height / PAGE_PX). Print CSS: `@page { size: A4; margin: 10mm 0 }`, card forced to 210 mm. Cards use `break-inside-avoid`.
 
 ## Styling
 Theme CSS vars on the root wrapper: `--accent` (fills, bars, banner), `--accent2` (banner gradient end), `--tint` (light backgrounds), `--ink` (darker shade for text/buttons on white; use it instead of `--accent` for text). The name `<h1>` uses `.name-trim` so the photo's top edge matches the top of the capital letters.

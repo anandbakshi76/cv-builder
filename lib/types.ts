@@ -27,6 +27,10 @@ export interface Header {
   availability: string;
   /** e.g. "Right to work in the UK" */
   workEligibility: string;
+  /** Optional, e.g. "Indian" (never a passport number) */
+  nationality: string;
+  /** Optional, e.g. "Student visa, up to 20 hrs/week in term" */
+  visaStatus: string;
   email: string;
   phone: string;
   location: string;

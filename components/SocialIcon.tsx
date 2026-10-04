@@ -58,7 +58,7 @@ const BACKGROUND: Record<LinkPlatform, string> = {
 export function SocialIcon({ platform, size = 24 }: { platform: LinkPlatform; size?: number }) {
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center rounded-full ring-1 ring-white/70"
+      className="soc-icon inline-flex shrink-0 items-center justify-center rounded-full ring-1 ring-white/70"
       style={{ background: BACKGROUND[platform], width: size, height: size }}
       aria-hidden
     >

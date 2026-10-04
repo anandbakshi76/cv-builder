@@ -34,7 +34,7 @@ export function PhotoUpload({ photo, onChange }: { photo: string; onChange: (v: 
   if (!editing && !photo) return null;
 
   return (
-    <div className="group relative h-20 w-20 shrink-0">
+    <div className="cv-photo group relative h-20 w-20 shrink-0">
       {photo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photo} alt="Profile" className="h-20 w-20 rounded-full object-cover ring-[3px] ring-white/50" />

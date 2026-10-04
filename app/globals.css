@@ -116,3 +116,270 @@ body {
 .header-classic [class*="ring-white"] {
   --tw-ring-color: #e2e8f0;
 }
+
+/* ------------------------------------------------------------------------------------------
+   Print options (Phase 2). The root wrapper carries data-print="colour|bw" and
+   data-photo="show|hide", chosen from the toolbar's Print options popover.
+   "colour" keeps the existing print look (as on screen). "bw" is the plain ATS-friendly output.
+   ------------------------------------------------------------------------------------------ */
+@page cvbw {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  /* Photo choice applies to both print styles */
+  [data-photo="hide"] .cv-photo {
+    display: none !important;
+  }
+
+  /* ---- Black & white, ATS-friendly ---- */
+  [data-print="bw"] {
+    --accent: #111 !important;
+    --accent2: #111 !important;
+    --ink: #111 !important;
+    --tint: #fff !important;
+  }
+  [data-print="bw"] .cv-card {
+    page: cvbw;
+    width: 210mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm 0;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    font-size: 14px; /* 10.5pt body */
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  /* Everything solid black text on white: no backgrounds, shadows, gradients or decorations */
+  [data-print="bw"] .cv-card * {
+    color: #111 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+  [data-print="bw"] .cv-card [class*="bg-"] {
+    background-color: transparent !important;
+  }
+  [data-print="bw"] .cv-card [class*="text-slate-4"],
+  [data-print="bw"] .cv-card [class*="text-slate-5"] {
+    color: #444 !important;
+  }
+  [data-print="bw"] .cv-card .deco,
+  [data-print="bw"] .cv-card .soc-icon,
+  [data-print="bw"] .cv-card header svg {
+    display: none !important;
+  }
+  [data-print="bw"] .cv-card header {
+    border-bottom: 1.5px solid #111 !important;
+    padding-top: 0 !important;
+  }
+  [data-print="bw"] .cv-card [class*="border-"] {
+    border-color: #999 !important;
+  }
+  [data-print="bw"] .cv-card h2 > span {
+    border-bottom: 2px solid #111 !important;
+    border-color: #111 !important;
+  }
+  [data-print="bw"] .cv-card [class*="border-l-"] {
+    border-left-color: #111 !important;
+  }
+
+  /* Type scale: name 24pt, section headings 14pt uppercase, card titles 12pt, everything else 10.5pt (min 10pt) */
+  [data-print="bw"] .cv-card [class*="text-xs"],
+  [data-print="bw"] .cv-card [class*="text-sm"],
+  [data-print="bw"] .cv-card [class*="text-base"],
+  [data-print="bw"] .cv-card [class*="text-[0.9"],
+  [data-print="bw"] .cv-card [class*="text-[13px]"],
+  [data-print="bw"] .cv-card [class*="text-[11px]"],
+  [data-print="bw"] .cv-card [class*="text-[10px]"] {
+    font-size: 14px !important;
+  }
+  [data-print="bw"] .cv-card header [class*="font-light"] {
+    font-size: 12pt !important;
+  }
+  [data-print="bw"] .cv-card [class*="text-[1.1rem]"] {
+    font-size: 12pt !important;
+  }
+  [data-print="bw"] .cv-card h1 {
+    font-size: 24pt !important;
+  }
+  [data-print="bw"] .cv-card h2 > span {
+    font-size: 14pt !important;
+  }
+  [data-print="bw"] .cv-card [class*="text-xl"] {
+    font-size: 12pt !important;
+  }
+}
+
+/* Black & white print, round 2: reading order, plain skill lists, square edges */
+@media print {
+  /* Positioned elements are painted after normal-flow content, which scrambles the PDF's text order
+     (the name and entries would come after the section headings). Static keeps text in DOM order for ATS. */
+  [data-print="bw"] .cv-card [class*="relative"],
+  [data-print="bw"] .cv-card [class*="absolute"] {
+    position: static !important;
+  }
+  [data-print="bw"] .cv-card svg {
+    display: none !important;
+  }
+  [data-print="bw"] .cv-card [class*="rounded-md"],
+  [data-print="bw"] .cv-card [class*="rounded-lg"],
+  [data-print="bw"] .cv-card [class*="rounded-xl"],
+  [data-print="bw"] .cv-card [class*="rounded-2xl"] {
+    border-radius: 0 !important;
+  }
+  [data-print="bw"] .cv-card [class*="border-l-"] {
+    border-left-width: 2px !important;
+    border-left-color: #555 !important;
+  }
+  /* Skill / technology tags become a plain comma-separated list */
+  [data-print="bw"] .cv-card .tag-chip {
+    border: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+  [data-print="bw"] .cv-card .tag-chip:not(:last-child)::after {
+    content: ",";
+  }
+}
+
+/* ATS: ligatures (fi, ff, fl) get extracted from the PDF as split words, e.g. "Arti fi cial", which breaks keyword matching */
+@media print {
+  [data-print="bw"] .cv-card,
+  [data-print="bw"] .cv-card * {
+    font-variant-ligatures: none !important;
+    font-feature-settings: "liga" 0, "clig" 0 !important;
+  }
+}
+
+@media print {
+  [data-print="bw"] .cv-card img {
+    filter: grayscale(1);
+  }
+}
+
+/* Black & white print, round 3 (fixes found by reviewing real PDFs) */
+@media print {
+  /* Section headings must be 14pt: the broader text-size rule above has higher specificity, so match it */
+  [data-print="bw"] .cv-card h2 > span[class*="text-"] {
+    font-size: 14pt !important;
+  }
+  /* Skill tags: no gap between the word and its trailing comma ("English," not "English ,") */
+  [data-print="bw"] .cv-card .tag-chip {
+    gap: 0 !important;
+  }
+  /* The CERTIFICATION / TRAINING tags are an on-screen aid; in an ATS print they read as part of the title */
+  [data-print="bw"] .cv-card .type-tag {
+    display: none !important;
+  }
+}
+
+/* Print refinements (approved after the PDF review) */
+@media print {
+  /* Colour print: nothing below 10pt (stat labels were 9pt, header contact column about 9.75pt, small tags 7.5pt) */
+  [data-print="colour"] .cv-card [class*="text-xs"],
+  [data-print="colour"] .cv-card [class*="text-[13px]"],
+  [data-print="colour"] .cv-card [class*="text-[11px]"],
+  [data-print="colour"] .cv-card [class*="text-[10px]"] {
+    font-size: 10pt !important;
+  }
+  /* Black & white: 15 mm left and right margins (was about 10.6 mm) */
+  [data-print="bw"] .cv-card > header,
+  [data-print="bw"] .cv-card > div {
+    padding-left: 15mm !important;
+    padding-right: 15mm !important;
+  }
+}
+
+/* Print fixes from the second PDF review */
+@media print {
+  /* Skills cards (Technical / Languages / Soft skills) must not split across pages: the label was stranded on one page and its tags on the next */
+  .cv-card [class*="md:grid-cols-3"] > div {
+    break-inside: avoid;
+  }
+  /* A text-shadow is painted as a second copy of the text, so the PDF contained every banner word twice ("Deekshan BakshiDeekshan Bakshi") */
+  .cv-card header,
+  .cv-card header * {
+    text-shadow: none !important;
+  }
+}
+
+/* Long entries (experience, internships, projects, education) may split across pages so pages are not left half empty.
+   Protections: the title row stays with the content that follows, bullets are never cut in half, and a bold label
+   such as "Outcomes & Accomplishments:" stays with its first bullet. Small rows (certifications, awards...) never split. */
+@media print {
+  .cv-card .card-split {
+    break-inside: auto;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .cv-card .card-head {
+    break-after: avoid;
+  }
+  .cv-card .card-split li {
+    break-inside: avoid;
+  }
+  .cv-card .card-split [class*="font-bold"] {
+    break-after: avoid;
+  }
+  .cv-card .card-split p,
+  .cv-card .card-split ul {
+    orphans: 2;
+    widows: 2;
+  }
+}
+
+/* Personal Details block (date of birth, address, nationality): left out of the printout when "Include personal details" is unticked */
+@media print {
+  [data-personal="hide"] .cv-personal {
+    display: none !important;
+  }
+}
+
+/* Final print polish.
+   Colour print used the page's own 10 mm margin, which Chrome drops when the print dialog says "Margins: None"
+   (pages 2 and 3 then started flush with the top edge). Like the black & white print, it now uses a zero-margin page
+   and its own 10 mm top/bottom padding, repeated on every page, so the result is the same whichever Margins option is chosen. */
+@page cvcolour {
+  size: A4;
+  margin: 0;
+}
+@media print {
+  [data-print="colour"] .cv-card {
+    page: cvcolour;
+    padding: 10mm 0;
+    overflow: visible !important;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  /* "Other certifications / Other Trainings" lines stay with the rows above them */
+  .cv-card .folded-line {
+    break-before: avoid;
+  }
+}
+
+/* Colour print: the banner runs edge to edge sideways, so on page 1 it also starts at the very top edge
+   (cancels the card's 10 mm top padding for the first element only; later pages keep their 10 mm margin) */
+@media print {
+  [data-print="colour"] .cv-card > header {
+    margin-top: -10mm;
+  }
+}
+
+/* ...and keep the banner's text where it was: the colour fills the top 10 mm instead of leaving a white band */
+@media print {
+  [data-print="colour"] .cv-card > header {
+    padding-top: calc(10mm + 0.875rem) !important;
+  }
+}
+
+/* Colour print banner: balance the padding. A single 10 mm empty strip above the name looked like a dead band, so the
+   extra height is split evenly above and below the text (about 8.7 mm each, clear of printers' unprintable border). */
+@media print {
+  [data-print="colour"] .cv-card > header {
+    padding-top: calc(5mm + 0.875rem) !important;
+    padding-bottom: calc(5mm + 0.875rem) !important;
+  }
+}
