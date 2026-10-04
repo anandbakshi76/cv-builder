@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { experienceFields, matchedSkills, projectFields, sameSkill, type FxState, type SkillFilter } from "@/lib/filter";
 import { cvHealth } from "@/lib/health";
 import { has, hasHeader, expectedGraduation, hrefFor, displayUrl, nonBlank } from "@/lib/cv";
 import { fmtMonth, fmtRange } from "@/lib/dates";
@@ -60,6 +61,8 @@ export default function CVEditor() {
   const { data, status, update, reset } = useCV();
   const [editing, setEditing] = useState(true);
   const [showHealth, setShowHealth] = useState(false);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [onlyMatches, setOnlyMatches] = useState(false);
   const [docHeight, setDocHeight] = useState(0);
   const [printPrefs, setPrintPrefs] = usePrintPrefs();
 
@@ -93,6 +96,16 @@ export default function CVEditor() {
 
   if (!data) return <div className="p-10 text-center text-slate-500">Loading…</div>;
 
+  const filter: SkillFilter = {
+    selected: selectedSkills,
+    onlyMatches,
+    toggle: (skill) =>
+      setSelectedSkills((cur) => (cur.some((x) => sameSkill(x, skill)) ? cur.filter((x) => !sameSkill(x, skill)) : [...cur, skill])),
+  };
+  const matchCount = (items: { fields: string[] }[]) => items.filter((i) => matchedSkills(selectedSkills, i.fields).length > 0).length;
+  const expMatches = matchCount([...data.experience, ...data.internships].map((x) => ({ fields: experienceFields(x) })));
+  const projMatches = matchCount(data.projects.map((x) => ({ fields: projectFields(x) })));
+  const showFilterBar = !editing && selectedSkills.length > 0;
   const theme = THEMES[data.theme] ?? THEMES.indigo;
   const pages = Math.max(1, Math.ceil((docHeight - 4) / PAGE_PX));
   const health = cvHealth(data, pages);
@@ -137,7 +150,10 @@ export default function CVEditor() {
                   <button
                     key={String(label)}
                     type="button"
-                    onClick={() => setEditing(v as boolean)}
+                    onClick={() => {
+                      setEditing(v as boolean);
+                      if (v) setSelectedSkills([]); // filters only exist in View mode
+                    }}
                     aria-pressed={editing === v}
                     className={`cursor-pointer px-3.5 py-1 ${editing === v ? "bg-[var(--ink)] text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
                   >
@@ -208,7 +224,43 @@ export default function CVEditor() {
           </div>
         )}
 
-        <CVDocument data={data} update={update} editing={editing} guides={editing ? 0 : docHeight} />
+        {showFilterBar && (
+          <div
+            role="status"
+            data-testid="filter-bar"
+            className="no-print fixed bottom-3 left-1/2 z-20 flex w-[min(52rem,calc(100vw-1.5rem))] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-white px-4 py-2.5 text-sm shadow-xl ring-1 ring-slate-300"
+          >
+            <span className="font-semibold text-slate-800">Filtering by:</span>
+            <span className="flex flex-wrap gap-1.5">
+              {selectedSkills.map((sk) => (
+                <button
+                  key={sk}
+                  type="button"
+                  onClick={() => filter.toggle(sk)}
+                  aria-label={`Remove ${sk} from the filter`}
+                  className="cursor-pointer rounded-full bg-[var(--ink)] px-2.5 py-0.5 text-white hover:brightness-110"
+                >
+                  {sk} ×
+                </button>
+              ))}
+            </span>
+            <span className="text-slate-600">
+              {expMatches} experience {expMatches === 1 ? "entry" : "entries"}, {projMatches} {projMatches === 1 ? "project" : "projects"} match
+            </span>
+            <label className="flex cursor-pointer items-center gap-1.5 text-slate-700">
+              <input type="checkbox" checked={onlyMatches} onChange={(e) => setOnlyMatches(e.target.checked)} className="cursor-pointer accent-[var(--accent)]" />
+              Show only matches
+            </label>
+            <button
+              type="button"
+              onClick={() => setSelectedSkills([])}
+              className="ml-auto cursor-pointer rounded-full border border-slate-300 px-3 py-1 font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+        <CVDocument data={data} update={update} editing={editing} guides={editing ? 0 : docHeight} filter={filter} />
         <div aria-hidden inert className="no-print pointer-events-none absolute left-[-99999px] top-0 invisible">
           <EditContext.Provider value={false}>
             <CVDocument data={data} update={() => {}} editing={false} innerRef={measureRef} measure />
@@ -226,6 +278,7 @@ function CVDocument({
   innerRef,
   measure,
   guides,
+  filter,
 }: {
   data: CVData;
   update: (fn: (d: CVData) => CVData) => void;
@@ -235,6 +288,8 @@ function CVDocument({
   measure?: boolean;
   /** Content height in px, when page-break guides should be drawn */
   guides?: number;
+  /** View-mode skill filter (never passed to the hidden measuring copy, and ignored when printing) */
+  filter?: SkillFilter;
 }) {
   const setHeader = (p: Partial<CVData["header"]>) => update((d) => ({ ...d, header: { ...d.header, ...p } }));
   const setSkills = (p: Partial<CVData["skills"]>) => update((d) => ({ ...d, skills: { ...d.skills, ...p } }));
@@ -252,11 +307,26 @@ function CVDocument({
   const show = (visible: boolean) => editing || visible;
   const anyContent = hasHeader(data) || Object.values(has).some((f) => f(data));
 
+  // ---- Skill filter (View mode only): highlight / dim / hide experience and projects by mentioned skills ----
+  const filterOn = !editing && !!filter && filter.selected.length > 0;
+  const hitsOf = (fields: string[]) => (filterOn && filter ? matchedSkills(filter.selected, fields) : []);
+  const fxOf = (fields: string[]): FxState | undefined =>
+    !filterOn ? undefined : hitsOf(fields).length ? "hit" : filter?.onlyMatches ? "hide" : "dim";
+  const badgeOf = (fields: string[]) => {
+    const hits = hitsOf(fields);
+    return hits.length ? <p className="fx-badge no-print">Matches: {hits.join(", ")}</p> : null;
+  };
+  const noMatchNote = (all: string[][]) =>
+    filterOn && filter?.onlyMatches && all.length > 0 && all.every((f) => hitsOf(f).length === 0) ? (
+      <p className="fx-badge no-print">No entries here mention the selected skills.</p>
+    ) : null;
+
   const experienceSection = (key: "experience" | "internships", title: string, addLabel: string, noun: string) => (
     <Section title={title} visible={show(has[key](data))}>
       <div className="space-y-4">
         {data[key].map((x) => (
-          <Card key={x.id} onRemove={() => remove(key, x.id)} label={`Remove ${noun}`}>
+          <Card key={x.id} onRemove={() => remove(key, x.id)} label={`Remove ${noun}`} fx={fxOf(experienceFields(x))}>
+          {badgeOf(experienceFields(x))}
             <CardHead
               title={<Editable value={x.title} onChange={(title) => patch(key, x.id, { title })} placeholder="Add your job title" />}
               subtitle={<Editable value={x.company} onChange={(company) => patch(key, x.id, { company })} placeholder="Add company / organisation" />}
@@ -297,6 +367,7 @@ function CVDocument({
           </Card>
         ))}
       </div>
+      {noMatchNote(data[key].map(experienceFields))}
       <AddButton label={addLabel} onClick={() => add(key, blankExperience())} />
     </Section>
   );
@@ -684,7 +755,8 @@ function CVDocument({
       <Section title="Projects" visible={show(has.projects(data))}>
         <div className="space-y-4">
           {data.projects.map((x) => (
-            <Card key={x.id} onRemove={() => remove("projects", x.id)} label="Remove project">
+            <Card key={x.id} onRemove={() => remove("projects", x.id)} label="Remove project" fx={fxOf(projectFields(x))}>
+              {badgeOf(projectFields(x))}
               <CardHead
                 title={<Editable value={x.name} onChange={(name) => patch("projects", x.id, { name })} placeholder="Add project name" />}
                 subtitle={<Editable value={x.organization} onChange={(organization) => patch("projects", x.id, { organization })} placeholder="Add school / organisation / company where this was done" />}
@@ -719,20 +791,24 @@ function CVDocument({
             </Card>
           ))}
         </div>
+        {noMatchNote(data.projects.map(projectFields))}
         <AddButton label="Add Project" onClick={() => add("projects", { name: "", organization: "", description: "", details: [""], tech: [], link: "", from: "", to: "" })} />
       </Section>
 
       {/* 6. SKILLS */}
       <Section title="Skills" visible={show(has.skills(data))}>
+        {!editing && filter && filter.selected.length === 0 && (
+          <p className="fx-badge no-print mb-2 !font-normal !text-slate-400">Click a skill to highlight the experience and projects that mention it.</p>
+        )}
         <div className="grid gap-3 md:grid-cols-3">
           <SkillRow label="Technical" show={s.technical.length > 0}>
-            <TagList tags={s.technical} onChange={(technical) => setSkills({ technical })} placeholder="Add skills, comma-separated: Python, React, Git" />
+            <TagList selected={!editing ? filter?.selected : undefined} onToggle={!editing ? filter?.toggle : undefined} tags={s.technical} onChange={(technical) => setSkills({ technical })} placeholder="Add skills, comma-separated: Python, React, Git" />
           </SkillRow>
           <SkillRow label="Languages" show={s.languages.length > 0}>
-            <TagList tags={s.languages} onChange={(languages) => setSkills({ languages })} placeholder="Add languages: English, Hindi" />
+            <TagList selected={!editing ? filter?.selected : undefined} onToggle={!editing ? filter?.toggle : undefined} tags={s.languages} onChange={(languages) => setSkills({ languages })} placeholder="Add languages: English, Hindi" />
           </SkillRow>
           <SkillRow label="Soft skills" show={s.soft.length > 0}>
-            <TagList tags={s.soft} onChange={(soft) => setSkills({ soft })} placeholder="Add soft skills: Teamwork, Communication" />
+            <TagList selected={!editing ? filter?.selected : undefined} onToggle={!editing ? filter?.toggle : undefined} tags={s.soft} onChange={(soft) => setSkills({ soft })} placeholder="Add soft skills: Teamwork, Communication" />
           </SkillRow>
         </div>
       </Section>
@@ -997,11 +1073,11 @@ function AddMissing({ data }: { data: CVData }) {
 }
 
 /** Template-style item: light grey card, thick accent bar on the left. */
-function Card({ children, onRemove, label, thin, dense, muted }: { children: React.ReactNode; onRemove: () => void; label: string; thin?: boolean; dense?: boolean; muted?: boolean }) {
+function Card({ children, onRemove, label, thin, dense, muted, fx }: { children: React.ReactNode; onRemove: () => void; label: string; thin?: boolean; dense?: boolean; muted?: boolean; fx?: FxState }) {
   const editing = useEditing();
   return (
     <div
-      className={`relative break-inside-avoid ${!thin && !dense ? "card-split" : ""} ${muted ? "opacity-50" : ""} rounded-md bg-slate-50 border-[var(--accent)] ${dense ? (editing ? "border-l-[3px] p-3" : "border-l-[3px] px-3 py-1.5") : thin ? "border-l-[3px] p-3" : "border-l-4 p-4"} ${editing ? "pr-10" : ""}`}
+      className={`relative break-inside-avoid ${fx ? `fx-${fx}` : ""} ${!thin && !dense ? "card-split" : ""} ${muted ? "opacity-50" : ""} rounded-md bg-slate-50 border-[var(--accent)] ${dense ? (editing ? "border-l-[3px] p-3" : "border-l-[3px] px-3 py-1.5") : thin ? "border-l-[3px] p-3" : "border-l-4 p-4"} ${editing ? "pr-10" : ""}`}
     >
       {children}
       {editing && (

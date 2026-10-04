@@ -383,3 +383,58 @@ body {
     padding-bottom: calc(5mm + 0.875rem) !important;
   }
 }
+
+/* ------------------------------------------------------------------------------------------
+   Phase 3: skill filter (View mode only). Matching cards get a coloured outline, the rest are dimmed
+   (or hidden with "Show only matches"). Printing ALWAYS ignores the filter: every card is shown normally,
+   with no outline, dimming or selected-tag styling.
+   ------------------------------------------------------------------------------------------ */
+.fx-hit {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.fx-dim {
+  opacity: 0.4;
+  transition: opacity 150ms;
+}
+.fx-dim:hover {
+  opacity: 0.85;
+}
+.fx-hide {
+  display: none;
+}
+.fx-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+@media print {
+  .fx-hit,
+  .fx-dim {
+    outline: 0 !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+  }
+  .fx-hide {
+    display: block !important;
+  }
+  .fx-badge {
+    display: none !important;
+  }
+  .fx-selected {
+    background-color: var(--tint) !important;
+    color: var(--ink) !important;
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent) !important;
+  }
+}
+
+/* No transitions in print: a printout must never capture a half-faded card or tag after the filter styles are switched off */
+@media print {
+  .cv-card,
+  .cv-card * {
+    transition: none !important;
+  }
+}

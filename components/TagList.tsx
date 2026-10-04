@@ -1,15 +1,19 @@
 "use client";
 import { useState } from "react";
+import { sameSkill } from "@/lib/filter";
 import { useEditing } from "./Editable";
 
 interface Props {
   tags: string[];
   onChange: (tags: string[]) => void;
   placeholder: string;
+  /** View-mode filter: when both are given, the shared selection is used instead of the local highlight toggle */
+  selected?: string[];
+  onToggle?: (tag: string) => void;
 }
 
 /** Comma-separated tag input. Each tag is clickable (highlight toggle; hook for future filtering). */
-export function TagList({ tags, onChange, placeholder }: Props) {
+export function TagList({ tags, onChange, placeholder, selected, onToggle }: Props) {
   const editing = useEditing();
   const [draft, setDraft] = useState("");
   const [active, setActive] = useState<Set<string>>(new Set());
@@ -27,6 +31,9 @@ export function TagList({ tags, onChange, placeholder }: Props) {
     setDraft("");
   };
 
+  const controlled = selected !== undefined && onToggle !== undefined;
+  const isOn = (t: string) => (controlled ? selected.some((x) => sameSkill(x, t)) : active.has(t));
+
   const toggle = (t: string) =>
     setActive((s) => {
       const n = new Set(s);
@@ -39,13 +46,13 @@ export function TagList({ tags, onChange, placeholder }: Props) {
       {tags.map((t) => (
         <span
           key={t}
-          className={`tag-chip inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm transition ${
-            active.has(t)
+          className={`tag-chip ${controlled && isOn(t) ? "fx-selected" : ""} inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm transition ${
+            isOn(t)
               ? "border-[var(--accent)] bg-[var(--ink)] text-white"
               : "border-[var(--accent)]/25 bg-[var(--tint)] text-[var(--ink)] hover:border-[var(--accent)]"
           }`}
         >
-          <button type="button" onClick={() => toggle(t)} aria-pressed={active.has(t)} className="cursor-pointer">
+          <button type="button" onClick={() => (controlled ? onToggle(t) : toggle(t))} aria-pressed={isOn(t)} className="cursor-pointer">
             {t}
           </button>
           {editing && (

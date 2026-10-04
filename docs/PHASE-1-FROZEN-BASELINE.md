@@ -41,3 +41,6 @@ BSc Computer Science with Artificial Intelligence, University of Nottingham, Yea
 
 ## Phase 2 complete (2026-10-04, git tag `phase-2`)
 View mode (formerly Preview), Print options (black & white ATS-friendly or colour, photo, personal details), ATS-standard headings, personal details block, page splitting, and the quality fixes from five rounds of real-PDF review. `tsc` and `npm run build` pass. Treat Phase 2 as part of the frozen base for Phase 3 onwards: the same review-and-approval rule applies to changing it.
+
+## Phase 3 complete (2026-10-04, git tag `phase-3`): skill filter in View mode
+Additive: no change to Edit mode, saved data or printing. See `docs/2026-10-03-cv-filtering.md`.
