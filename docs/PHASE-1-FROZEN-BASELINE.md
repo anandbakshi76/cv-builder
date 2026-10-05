@@ -44,3 +44,8 @@ View mode (formerly Preview), Print options (black & white ATS-friendly or colou
 
 ## Phase 3 complete (2026-10-04, git tag `phase-3`): skill filter in View mode
 Additive: no change to Edit mode, saved data or printing. See `docs/2026-10-03-cv-filtering.md`.
+
+## Phase 4 (2026-10-04, in progress): export, versions, photo checks
+Additive: Export As menu (Word, text, JSON + import, LinkedIn, e-mail, QR), Versions sidebar, photo upload checks and fixes, README and CI workflow. Share links are waiting for an owner decision (needs a backend). Small approved-by-prompt change to existing behaviour: the PDF's file name / title while printing is now `First_Last_CV`. See `docs/2026-10-03-export-formats.md` and `docs/2026-10-03-sharing.md`.
+- 2026-10-04 (Phase 4 follow-up, owner request): no limit on the number of saved versions; Word export gained colour themes, a photo / personal-details dialog, footer and UK English; LinkedIn text restructured to LinkedIn's field names.
+- 2026-10-04 (Phase 4 follow-up, owner request): HTML and one-page landscape PowerPoint exports added; Word colour header strip aligned with the banner. See `docs/2026-10-03-export-formats.md`.

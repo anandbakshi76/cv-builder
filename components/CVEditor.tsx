@@ -5,14 +5,20 @@ import { cvHealth } from "@/lib/health";
 import { has, hasHeader, expectedGraduation, hrefFor, displayUrl, nonBlank } from "@/lib/cv";
 import { fmtMonth, fmtRange } from "@/lib/dates";
 import { blankEducation, blankExperience, newId } from "@/lib/defaults";
+import { fileBase } from "@/lib/export/formats";
 import { THEMES, THEME_GROUPS, swatch } from "@/lib/themes";
 import { useCV, type SaveStatus } from "@/lib/useCV";
+import { useVersions } from "@/lib/useVersions";
+import { sameCv } from "@/lib/versions";
 import type { CVData, Display, HeaderStyle, LinkPlatform, ThemeId } from "@/lib/types";
 import { BulletList } from "./BulletList";
 import { DateField, DatePill, DateRange, FullDateField } from "./DateField";
 import { Editable, EditContext, useEditing } from "./Editable";
+import { ExportMenu } from "./ExportMenu";
+import { btnPrimary, btnSecondary, Modal } from "./Modal";
 import { PhotoUpload } from "./PhotoUpload";
 import { PrintOptions, usePrintPrefs } from "./PrintOptions";
+import { VersionsPanel } from "./VersionsPanel";
 import { AddButton, Label, RemoveButton, Section } from "./Section";
 import { PLATFORMS, SocialIcon } from "./SocialIcon";
 import { TagList } from "./TagList";
@@ -65,6 +71,16 @@ export default function CVEditor() {
   const [onlyMatches, setOnlyMatches] = useState(false);
   const [docHeight, setDocHeight] = useState(0);
   const [printPrefs, setPrintPrefs] = usePrintPrefs();
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ cv: CVData; label: string; loadId?: string } | null>(null);
+
+  const notify = useCallback((message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast((cur) => (cur === message ? "" : cur)), 3800);
+  }, []);
+  const versions = useVersions(data, notify);
 
   // Hidden, fixed-width (A4 width) preview copy: its height gives the real printed length.
   const measureRef = useCallback((el: HTMLElement | null) => {
@@ -79,18 +95,30 @@ export default function CVEditor() {
   const personName = data?.header.name.trim();
   useEffect(() => {
     const title = personName ? `${personName} – CV` : "CV Builder";
+    const printTitle = fileBase(personName ?? ""); // e.g. Deekshan_Bakshi_CV: the PDF's default file name
+    let printing = false;
     const apply = () => {
-      if (document.title !== title) document.title = title;
+      if (!printing && document.title !== title) document.title = title;
     };
     apply();
-    // The framework re-writes its own <title> after hydration, so keep ours in place (and re-apply at print
-    // time): the PDF's title and default file name come from document.title (Print button and Ctrl+P).
+    // The framework re-writes its own <title> after hydration, so keep ours in place. While the print dialog is
+    // open the title is the file-style name, because the PDF's title and default file name come from document.title.
     const observer = new MutationObserver(apply);
     observer.observe(document.head, { childList: true, subtree: true, characterData: true });
-    window.addEventListener("beforeprint", apply);
+    const before = () => {
+      printing = true;
+      document.title = printTitle;
+    };
+    const after = () => {
+      printing = false;
+      apply();
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
     return () => {
       observer.disconnect();
-      window.removeEventListener("beforeprint", apply);
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
     };
   }, [personName]);
 
@@ -120,9 +148,24 @@ export default function CVEditor() {
     }, 200);
   };
 
+  const exportOpts = { photo: printPrefs.photo, personal: printPrefs.personal };
+
+  /** Replace the working CV (version load / JSON import). Offers to save the current CV first if it is not saved anywhere. */
+  const doReplace = (cv: CVData, label: string, loadId?: string) => {
+    update(() => JSON.parse(JSON.stringify(cv)) as CVData);
+    versions.setLoadedId(loadId ?? null);
+    setSelectedSkills([]);
+    notify(`Loaded "${label}".`);
+  };
+  const requestReplace = (cv: CVData, label: string, loadId?: string) => {
+    if (versions.current || sameCv(cv, data)) doReplace(cv, label, loadId);
+    else setPending({ cv, label, loadId });
+  };
+
   return (
     <EditContext.Provider value={editing}>
       <div
+        id="cv-root"
         data-print={printPrefs.style}
         data-photo={printPrefs.photo ? "show" : "hide"}
         data-personal={printPrefs.personal ? "show" : "hide"}
@@ -134,6 +177,11 @@ export default function CVEditor() {
             <div role="status" data-testid="save-status" className="flex items-center gap-2 text-sm text-slate-600">
               <span className={`h-2.5 w-2.5 rounded-full ${STATUS_UI[status].cls}`} />
               {STATUS_UI[status].text}
+              <span className="hidden text-slate-300 sm:inline">|</span>
+              <span data-testid="version-label" className="max-w-[14rem] truncate text-slate-500" title="Current version">
+                Version: <strong className="text-slate-700">{versions.loaded ? versions.loaded.name : "Working copy"}</strong>
+                {versions.modified && " (edited)"}
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <ThemePicker
@@ -179,6 +227,24 @@ export default function CVEditor() {
               <PrintOptions prefs={printPrefs} onChange={setPrintPrefs} />
               <button type="button" onClick={print} className="cursor-pointer rounded-full border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">
                 Print
+              </button>
+              <ExportMenu
+                data={data}
+                opts={exportOpts}
+                defaultColour={printPrefs.style === "colour"}
+                onPrint={print}
+                onImport={(cv, fileName) => requestReplace(cv, fileName)}
+                notify={notify}
+                setBusy={setBusy}
+                onExported={versions.markExported}
+              />
+              <button
+                type="button"
+                onClick={() => setVersionsOpen((v) => !v)}
+                aria-expanded={versionsOpen}
+                className="cursor-pointer rounded-full border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50"
+              >
+                Versions <span className="text-xs text-slate-500">({versions.versions.length})</span>
               </button>
               <button
                 type="button"
@@ -258,6 +324,60 @@ export default function CVEditor() {
             >
               Clear filters
             </button>
+          </div>
+        )}
+        <VersionsPanel
+          open={versionsOpen}
+          onClose={() => setVersionsOpen(false)}
+          data={data}
+          versions={versions.versions}
+          loaded={versions.loaded}
+          modified={versions.modified}
+          onSave={versions.save}
+          onLoad={(v) => requestReplace(v.data, v.name, v.id)}
+          onDelete={versions.remove}
+        />
+        {pending && (
+          <Modal title="Replace your current CV?" onClose={() => setPending(null)}>
+            <p>
+              Loading <strong>{pending.label}</strong> replaces the CV you are working on, and your current CV is not saved as a version yet.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => setPending(null)} className={btnSecondary}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  doReplace(pending.cv, pending.label, pending.loadId);
+                  setPending(null);
+                }}
+                className={btnSecondary}
+              >
+                Replace without saving
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (versions.save(`Auto-saved before loading ${pending.label}`.slice(0, 60))) {
+                    doReplace(pending.cv, pending.label, pending.loadId);
+                    setPending(null);
+                  }
+                }}
+                className={btnPrimary}
+              >
+                Save current first
+              </button>
+            </div>
+          </Modal>
+        )}
+        {(busy || toast) && (
+          <div
+            role="status"
+            data-testid="toast"
+            className="no-print fixed bottom-16 left-1/2 z-[60] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-sm text-white shadow-xl"
+          >
+            {busy ? `⏳ ${busy}` : toast}
           </div>
         )}
         <CVDocument data={data} update={update} editing={editing} guides={editing ? 0 : docHeight} filter={filter} />
@@ -610,7 +730,7 @@ function CVDocument({
 
     {/* QUICK FACTS STRIP: availability + work eligibility, right under the banner */}
     {(editing || h.availability.trim() || h.workEligibility.trim() || h.visaStatus.trim()) && (
-      <div className="flex flex-wrap gap-x-8 gap-y-1 border-b border-[var(--accent)]/15 bg-[var(--tint)] px-5 py-2 text-sm font-medium text-slate-700 sm:px-10 [&_svg]:text-[var(--ink)]">
+      <div className={`flex flex-wrap gap-x-8 gap-y-1 border-b border-[var(--accent)]/15 bg-[var(--tint)] px-5 py-2 text-sm font-medium text-slate-700 sm:px-10 [&_svg]:text-[var(--ink)]`}>
         <Contact icon="clock" value={h.availability} onChange={(availability) => setHeader({ availability })} placeholder="Add availability, e.g. Weekends & evenings, up to 20 hrs/week" />
         <Contact icon="check" value={h.workEligibility} onChange={(workEligibility) => setHeader({ workEligibility })} placeholder="Add work eligibility, e.g. Right to work in the UK" />
         <Contact icon="badge" label="Visa / work status:" value={h.visaStatus} onChange={(visaStatus) => setHeader({ visaStatus })} placeholder="Add visa / work status (optional), e.g. Student visa, up to 20 hrs/week in term" />
