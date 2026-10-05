@@ -54,3 +54,6 @@ The app is fully client-side, so any Node host works (for example Vercel or Netl
 
 ## License
 No license has been chosen yet. Add a `LICENSE` file (for example MIT) before publishing if you want others to be able to reuse the code.
+
+## Portfolio website
+A recruiter-facing portfolio built from the same CV lives at `/portfolio` (home, CV, projects, contact). The CV builder stays at `/`. To publish your own: export your CV as JSON and save it as `public/portfolio-cv.json`. See `docs/2026-10-03-portfolio.md`.

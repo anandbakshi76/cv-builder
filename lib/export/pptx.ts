@@ -14,13 +14,13 @@ export type PptxOptions = DocxOptions;
    shortened step by step to keep it, and only after that does the font get smaller.
    --------------------------------------------------------------------------------------------- */
 
-interface Run {
+export interface Run {
   text: string;
   bold?: boolean;
   color?: string;
   link?: string;
 }
-interface Para {
+export interface Para {
   runs: Run[];
   bullet?: boolean;
   /** space after, in points */
@@ -30,13 +30,13 @@ interface Para {
   align?: "left" | "center" | "right";
 }
 
-type Item =
+export type Item =
   | { k: "rect"; x: number; y: number; w: number; h: number; fill?: string; transp?: number; line?: string; lw?: number; round?: number }
   | { k: "ellipse"; x: number; y: number; w: number; h: number; fill?: string; transp?: number; line?: string; lw?: number }
   | { k: "text"; x: number; y: number; w: number; h: number; paras: Para[]; size: number; valign?: "top" | "middle"; charSpacing?: number }
   | { k: "photo"; x: number; y: number; d: number };
 
-const SLIDE = { w: 13.333, h: 7.5 };
+export const SLIDE = { w: 13.333, h: 7.5 };
 const TOP = 0.3;
 const BOTTOM = SLIDE.h - 0.22;
 const SIDE_W = 3.3;
@@ -405,11 +405,10 @@ export interface PptxResult {
   fits: boolean;
 }
 
-export async function toPptxBlob(m: DocModel, o: PptxOptions): Promise<PptxResult> {
-  const { default: PptxGenJS } = await import("pptxgenjs");
+function lookFor(o: PptxOptions): Look {
   const hex = (c: string) => c.replace("#", "").toUpperCase();
   const accent = hex(o.theme.accent);
-  const look: Look = o.colour
+  return o.colour
     ? {
         colour: true,
         text: "1F2937",
@@ -444,26 +443,49 @@ export async function toPptxBlob(m: DocModel, o: PptxOptions): Promise<PptxResul
         pillFill: "none",
         pillText: "000000",
       };
+}
 
-  const layout = chooseLayout(m, look);
+/** The background shapes (sidebar, soft circles or the black & white divider) as items. */
+function decorItems(o: PptxOptions, look: Look): Item[] {
+  if (!o.colour) return [{ k: "rect", x: SIDE_W, y: TOP, w: 0.012, h: SLIDE.h - 2 * TOP, fill: "999999" }];
+  const light = mix(look.accent, "000000", 0.12);
+  const dark = mix(look.accent, "000000", 0.42);
+  // soft circles, fully inside the sidebar and the slide (nothing sticks out in PowerPoint's editing view)
+  return [
+    { k: "rect", x: 0, y: 0, w: SIDE_W, h: SLIDE.h, fill: look.sideBg },
+    { k: "ellipse", x: 0.1, y: 6.0, w: 1.3, h: 1.3, fill: light, transp: 65 },
+    { k: "ellipse", x: 1.85, y: 5.95, w: 1.35, h: 1.35, fill: dark },
+    { k: "ellipse", x: 2.2, y: 0.12, w: 0.95, h: 0.95, fill: light, transp: 55 },
+  ];
+}
+
+export interface OnePager {
+  /** everything to draw, in drawing order, in inches on a 13.333 x 7.5 slide */
+  items: Item[];
+  size: number;
+  trimLevel: number;
+  fits: boolean;
+  /** default text colour (hex without #) */
+  textColor: string;
+}
+
+/** The finished one-page layout, used by the PowerPoint file and by the portfolio's on-screen preview. */
+export function layoutOnePager(m: DocModel, o: PptxOptions): OnePager {
+  const look = lookFor(o);
+  const lay = chooseLayout(m, look);
+  return { items: [...decorItems(o, look), ...lay.items], size: lay.size, trimLevel: lay.trimLevel, fits: lay.fits, textColor: look.text };
+}
+
+export async function toPptxBlob(m: DocModel, o: PptxOptions): Promise<PptxResult> {
+  const { default: PptxGenJS } = await import("pptxgenjs");
+  const layout = layoutOnePager(m, o);
+  const look = { text: layout.textColor };
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = m.name || "CV Builder";
   pptx.title = m.name ? `${m.name} - one page profile` : "One page profile";
   const slide = pptx.addSlide();
   slide.background = { color: "FFFFFF" };
-
-  if (o.colour) {
-    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: SIDE_W, h: SLIDE.h, fill: { color: look.sideBg }, line: { type: "none" } });
-    // soft circles, fully inside the sidebar and the slide (nothing sticks out in PowerPoint's editing view)
-    const light = mix(accent, "000000", 0.12);
-    const dark = mix(accent, "000000", 0.42);
-    slide.addShape(pptx.ShapeType.ellipse, { x: 0.1, y: 6.0, w: 1.3, h: 1.3, fill: { color: light, transparency: 65 }, line: { type: "none" } });
-    slide.addShape(pptx.ShapeType.ellipse, { x: 1.85, y: 5.95, w: 1.35, h: 1.35, fill: { color: dark }, line: { type: "none" } });
-    slide.addShape(pptx.ShapeType.ellipse, { x: 2.2, y: 0.12, w: 0.95, h: 0.95, fill: { color: light, transparency: 55 }, line: { type: "none" } });
-  } else {
-    slide.addShape(pptx.ShapeType.rect, { x: SIDE_W, y: TOP, w: 0.012, h: SLIDE.h - 2 * TOP, fill: { color: "999999" }, line: { type: "none" } });
-  }
 
   const toText = (paras: Para[], size: number) =>
     paras.flatMap((p) =>

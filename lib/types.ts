@@ -38,8 +38,12 @@ export interface Header {
   dateOfBirth: string;
   /** Optional full home address */
   address: string;
-  /** Resized JPEG data URL, or "" */
+  /** Resized JPEG data URL of the photo used on the CV, or "" */
   photo: string;
+  /** Library of uploaded photos (resized JPEG data URLs) to choose from; `photo` is one of them */
+  photos: string[];
+  /** The photo used on the portfolio site; "" = same as the CV photo */
+  portfolioPhoto: string;
   links: LinkItem[];
 }
 

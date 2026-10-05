@@ -1,0 +1,161 @@
+/* Portfolio styles (Phase 5). Everything is scoped under .pf-root so nothing here can touch the CV builder. */
+
+.pf-root {
+  --pf-gold-soft: color-mix(in srgb, var(--pf-gold) 55%, white);
+  --pf-deep: color-mix(in srgb, var(--accent) 38%, black);
+  --pf-dark: color-mix(in srgb, var(--accent) 60%, black);
+  --pf-glow: color-mix(in srgb, var(--accent2) 80%, white);
+  font-family: Calibri, Carlito, "Segoe UI", Helvetica, Arial, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* ---------- hero (dark by default, light on request) ---------- */
+.pf-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(900px 500px at 85% 15%, color-mix(in srgb, var(--pf-glow) 55%, transparent) 0, transparent 60%),
+    linear-gradient(135deg, var(--pf-deep), var(--pf-dark) 58%, color-mix(in srgb, var(--accent2) 70%, var(--pf-dark)));
+}
+.pf-root[data-hero="light"] .pf-hero {
+  color: var(--pf-deep);
+  background:
+    radial-gradient(900px 500px at 85% 15%, color-mix(in srgb, var(--accent) 20%, white) 0, transparent 60%),
+    linear-gradient(135deg, color-mix(in srgb, var(--tint) 55%, white), var(--tint) 60%, color-mix(in srgb, var(--accent) 16%, white));
+}
+.pf-circle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.07);
+  animation: pf-drift 14s ease-in-out infinite alternate;
+}
+.pf-root[data-hero="light"] .pf-hero .pf-circle {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.pf-circle.gold {
+  background: color-mix(in srgb, var(--pf-gold) 14%, transparent);
+  animation-duration: 18s;
+  animation-direction: alternate-reverse;
+}
+@keyframes pf-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(18px, -22px, 0); }
+}
+
+.pf-accent-text {
+  background: linear-gradient(90deg, var(--pf-gold), var(--pf-gold-soft));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pf-root[data-hero="light"] .pf-hero .pf-accent-text {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.pf-sub { color: rgba(255, 255, 255, 0.92); }
+.pf-root[data-hero="light"] .pf-hero .pf-sub { color: color-mix(in srgb, var(--pf-deep) 78%, white); }
+.pf-eyebrow-hero { color: var(--pf-gold); }
+.pf-root[data-hero="light"] .pf-hero .pf-eyebrow-hero { color: var(--ink); }
+.pf-role {
+  border: 1.5px solid var(--pf-gold);
+  color: var(--pf-gold-soft);
+}
+.pf-root[data-hero="light"] .pf-hero .pf-role { border-color: var(--accent); color: var(--ink); }
+.pf-avail {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.pf-root[data-hero="light"] .pf-hero .pf-avail { background: #fff; border-color: color-mix(in srgb, var(--accent) 25%, white); }
+.pf-btn-gold {
+  background: var(--pf-gold);
+  color: var(--pf-on-gold);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--pf-gold) 38%, transparent);
+  transition: transform 160ms, box-shadow 160ms;
+}
+.pf-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 34px color-mix(in srgb, var(--pf-gold) 48%, transparent); }
+.pf-btn-ghost {
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  transition: background 160ms;
+}
+.pf-btn-ghost:hover { background: rgba(255, 255, 255, 0.12); }
+.pf-root[data-hero="light"] .pf-hero .pf-btn-ghost { border-color: var(--accent); color: var(--ink); }
+.pf-root[data-hero="light"] .pf-hero .pf-btn-ghost:hover { background: color-mix(in srgb, var(--accent) 10%, white); }
+.pf-glass {
+  background: color-mix(in srgb, var(--pf-deep) 78%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+  color: #fff;
+  animation: pf-float 6s ease-in-out infinite alternate;
+}
+.pf-glass b { color: var(--pf-gold); }
+.pf-glass span { color: rgba(255, 255, 255, 0.85); }
+.pf-root[data-hero="light"] .pf-hero .pf-glass { background: #fff; border-color: color-mix(in srgb, var(--accent) 18%, white); box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12); }
+.pf-root[data-hero="light"] .pf-hero .pf-glass b { color: var(--ink); }
+.pf-root[data-hero="light"] .pf-hero .pf-glass span { color: #5b6472; }
+@keyframes pf-float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-9px); }
+}
+.pf-root[data-cards="off"] .pf-glass { display: none; }
+.pf-ring { border: 2px solid rgba(255, 255, 255, 0.25); }
+.pf-ring-dash { border: 1px dashed color-mix(in srgb, var(--pf-gold) 55%, transparent); }
+.pf-root[data-hero="light"] .pf-hero .pf-ring { border-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+
+/* ---------- header (follows the hero style) ---------- */
+.pf-header { color: #fff; background: color-mix(in srgb, var(--pf-deep) 88%, transparent); border-bottom: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.pf-root[data-hero="light"] .pf-header { color: var(--pf-deep); background: rgba(255, 255, 255, 0.82); border-bottom-color: color-mix(in srgb, var(--accent) 14%, white); }
+.pf-navlink { color: inherit; opacity: 0.82; }
+.pf-navlink:hover { opacity: 1; background: rgba(255, 255, 255, 0.1); }
+.pf-root[data-hero="light"] .pf-navlink:hover { background: color-mix(in srgb, var(--accent) 10%, white); }
+.pf-navlink[aria-current="page"] { opacity: 1; background: rgba(255, 255, 255, 0.16); }
+.pf-root[data-hero="light"] .pf-navlink[aria-current="page"] { background: color-mix(in srgb, var(--accent) 14%, white); }
+.pf-mobile-menu { background: var(--pf-deep); color: #fff; }
+.pf-root[data-hero="light"] .pf-mobile-menu { background: #fff; color: var(--pf-deep); }
+
+/* ---------- reveal on scroll, progress bar ---------- */
+.pf-reveal { opacity: 0; transform: translateY(22px); transition: opacity 600ms ease, transform 600ms ease; }
+.pf-reveal.in { opacity: 1; transform: none; }
+.pf-progress { position: fixed; left: 0; top: 0; height: 3px; z-index: 70; background: linear-gradient(90deg, var(--pf-gold), var(--pf-gold-soft)); transform-origin: left; }
+
+/* ---------- dark panels (about glance, call to action, footer) ---------- */
+.pf-panel {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(150deg, var(--pf-deep), var(--pf-dark) 60%, color-mix(in srgb, var(--accent2) 65%, var(--pf-dark)));
+}
+.pf-panel .pf-circle { background: rgba(255, 255, 255, 0.07); }
+.pf-footer { background: color-mix(in srgb, var(--accent) 22%, black); color: color-mix(in srgb, var(--accent) 25%, white); }
+
+/* ---------- cards ---------- */
+.pf-card { transition: transform 200ms, box-shadow 200ms; }
+.pf-card:hover { transform: translateY(-4px); box-shadow: 0 22px 50px rgba(15, 23, 42, 0.16); }
+.pf-stat { border-top: 4px solid var(--pf-gold); }
+
+/* short laptop windows (or browser zoom): keep the main buttons above the fold */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .pf-hero-home { padding-top: 2rem; padding-bottom: 7rem; }
+  .pf-hero-home h1 { font-size: 4.2rem; }
+  .pf-hero-home .pf-photo { max-width: 21rem; }
+}
+@media (min-width: 1024px) and (max-height: 700px) {
+  .pf-hero-home { padding-top: 1.25rem; }
+  .pf-hero-home h1 { font-size: 3.6rem; }
+  .pf-hero-home .pf-photo { max-width: 17rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-root { scroll-behavior: auto; }
+  .pf-circle, .pf-glass { animation: none; }
+  .pf-reveal { opacity: 1; transform: none; transition: none; }
+  .pf-card, .pf-btn-gold { transition: none; }
+}
+@media print {
+  .pf-reveal { opacity: 1 !important; transform: none !important; }
+  .pf-progress { display: none; }
+}

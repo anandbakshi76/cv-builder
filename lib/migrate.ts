@@ -67,6 +67,16 @@ function education(old: any): EducationItem[] {
   return items;
 }
 
+/** Photo library: older saves have only `photo`, which becomes the first library entry. */
+function photoFields(h: any): { photos: string[]; portfolioPhoto: string } {
+  const isImg = (x: unknown): x is string => typeof x === "string" && x.startsWith("data:image");
+  const cv = isImg(h?.photo) ? h.photo : "";
+  const lib: string[] = [];
+  for (const x of [cv, ...(Array.isArray(h?.photos) ? h.photos : [])]) if (isImg(x) && !lib.includes(x)) lib.push(x);
+  const pf = isImg(h?.portfolioPhoto) && lib.includes(h.portfolioPhoto) ? h.portfolioPhoto : "";
+  return { photos: lib, portfolioPhoto: pf };
+}
+
 /** Turns whatever is in localStorage (any earlier shape) into a valid CVData. */
 export function migrate(raw: any): CVData {
   const p = raw && typeof raw === "object" ? raw : {};
@@ -81,6 +91,7 @@ export function migrate(raw: any): CVData {
       ...defaultCV.header,
       ...p.header,
       links: arr(p.header?.links).map((l) => ({ id: str(l.id) || newId(), platform: l.platform ?? "Other", url: str(l.url) })),
+      ...photoFields(p.header),
     },
     education: education(p.education),
     skills: { ...defaultCV.skills, ...p.skills },

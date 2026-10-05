@@ -646,7 +646,7 @@ function CVDocument({
       <div aria-hidden className="deco pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10" />
       <div aria-hidden className="deco pointer-events-none absolute -bottom-24 right-24 h-56 w-56 rounded-full bg-black/10" />
       <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
-        <PhotoUpload photo={h.photo} onChange={(photo) => setHeader({ photo })} />
+        <PhotoUpload photo={h.photo} photos={h.photos} portfolioPhoto={h.portfolioPhoto} onChange={(photo) => setHeader({ photo })} onPatch={setHeader} />
         <div className="min-w-0 flex-1">
           {/* identity (left) + contact details (right) */}
           <div className="grid gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]">

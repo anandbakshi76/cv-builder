@@ -1,0 +1,126 @@
+{
+  "app": "cv-builder",
+  "format": 1,
+  "exportedAt": "2026-10-05T00:00:00.000Z",
+  "cv": {
+    "schemaVersion": 1,
+    "header": {
+      "name": "Alex Morgan",
+      "headline": "Computer Science student building useful software",
+      "highlights": "Python | Web | Problem Solver",
+      "availability": "Open to part-time work and internships",
+      "workEligibility": "Right to work in the UK",
+      "nationality": "",
+      "visaStatus": "",
+      "email": "hello@example.com",
+      "phone": "",
+      "location": "Nottingham, UK",
+      "dateOfBirth": "",
+      "address": "",
+      "photo": "",
+      "links": [
+        {
+          "id": "l1",
+          "platform": "GitHub",
+          "url": "github.com/your-username"
+        },
+        {
+          "id": "l2",
+          "platform": "LinkedIn",
+          "url": "linkedin.com/in/your-name"
+        }
+      ]
+    },
+    "stats": [
+      {
+        "id": "s1",
+        "value": "2",
+        "label": "Projects shipped"
+      },
+      {
+        "id": "s2",
+        "value": "Python",
+        "label": "Main language"
+      },
+      {
+        "id": "s3",
+        "value": "Year 1",
+        "label": "BSc Computer Science"
+      }
+    ],
+    "summary": "This is demo content for the portfolio site. Export your own CV from the CV builder (Export As, JSON) and save it as public/portfolio-cv.json to publish your real portfolio.",
+    "education": [
+      {
+        "id": "e1",
+        "degree": "BSc Computer Science",
+        "institution": "University of Example",
+        "current": true,
+        "yearOfStudy": 1,
+        "courseLength": 3,
+        "end": "",
+        "grades": "",
+        "coursework": "",
+        "notes": ""
+      }
+    ],
+    "skills": {
+      "technical": [
+        "Python",
+        "TypeScript",
+        "Git"
+      ],
+      "languages": [
+        "English"
+      ],
+      "soft": [
+        "Teamwork",
+        "Communication"
+      ]
+    },
+    "theme": "teal",
+    "headerStyle": "banner",
+    "experience": [],
+    "internships": [],
+    "projects": [
+      {
+        "id": "p1",
+        "name": "Demo project: Habit Tracker",
+        "organization": "Personal project",
+        "description": "A small web app that tracks daily habits and shows streaks.",
+        "details": [
+          "Built with TypeScript and React",
+          "Data stored locally in the browser"
+        ],
+        "tech": [
+          "TypeScript",
+          "React"
+        ],
+        "link": "github.com/your-username/habit-tracker",
+        "from": "2026-09",
+        "to": "present"
+      },
+      {
+        "id": "p2",
+        "name": "Demo project: Expense Tracker",
+        "organization": "Personal project",
+        "description": "A command-line app that totals spending by category.",
+        "details": [
+          "Python, CSV storage",
+          "Tests with pytest"
+        ],
+        "tech": [
+          "Python",
+          "pytest"
+        ],
+        "link": "",
+        "from": "2026-06",
+        "to": "2026-08"
+      }
+    ],
+    "mergeCertTraining": true,
+    "certifications": [],
+    "trainings": [],
+    "awards": [],
+    "extracurricular": []
+  }
+}
