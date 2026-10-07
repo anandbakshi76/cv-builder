@@ -246,6 +246,10 @@ export default function CVEditor() {
               >
                 Versions <span className="text-xs text-slate-500">({versions.versions.length})</span>
               </button>
+              {/* plain link (full page load) so the editor saves any pending change first */}
+              <a href="/job-matcher" className="cursor-pointer rounded-full border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-50">
+                Job Matcher
+              </a>
               <button
                 type="button"
                 onClick={() => {

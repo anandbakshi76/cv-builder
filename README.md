@@ -57,3 +57,6 @@ No license has been chosen yet. Add a `LICENSE` file (for example MIT) before pu
 
 ## Portfolio website
 A recruiter-facing portfolio built from the same CV lives at `/portfolio` (home, CV, projects, contact). The CV builder stays at `/`. To publish your own: export your CV as JSON and save it as `public/portfolio-cv.json`. See `docs/2026-10-03-portfolio.md`.
+
+## Job Matcher
+Compare your CV with a job description (upload PDF, DOCX, JSON, HTML, XLSX, TXT or PPTX, or paste text) at `/job-matcher`: match score, skills breakdown, one-click safe suggestions and a new aligned CV version. Works without any key using a basic keyword check; for AI analysis copy `.env.example` to `.env.local` and add an API key. See `docs/2026-10-03-job-matcher.md`.

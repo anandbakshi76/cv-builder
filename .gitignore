@@ -5,3 +5,8 @@ next-env.d.ts
 
 # personal CV data (never commit)
 /local-data/
+
+# local secrets (never commit)
+.env
+.env.*
+!.env.example

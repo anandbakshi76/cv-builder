@@ -14,6 +14,12 @@ export interface SavedVersion {
   savedAt: string;
   /** ISO timestamp of the last export made while this version was the current CV */
   exportedAt?: string;
+  /** Set when this version was created by the Job Matcher: the id of the job description it was aligned to */
+  jobId?: string;
+  /** Set when the version is an AI-tailored CV made by the Job Matcher (a different kind of version, labelled in the list) */
+  tailored?: boolean;
+  /** Name of the CV or version it was tailored from */
+  basedOn?: string;
   data: CVData;
 }
 
@@ -30,6 +36,9 @@ export function loadVersions(): SavedVersion[] {
         name: v.name as string,
         savedAt: typeof v.savedAt === "string" ? v.savedAt : new Date(0).toISOString(),
         exportedAt: typeof v.exportedAt === "string" ? v.exportedAt : undefined,
+        jobId: typeof v.jobId === "string" ? v.jobId : undefined,
+        tailored: v.tailored === true ? true : undefined,
+        basedOn: typeof v.basedOn === "string" ? v.basedOn : undefined,
         data: migrate(v.data),
       }));
   } catch {

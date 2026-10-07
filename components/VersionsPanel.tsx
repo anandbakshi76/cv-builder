@@ -65,6 +65,11 @@ export function VersionsPanel({ open, onClose, data, versions, loaded, modified,
                 <p className="text-xs text-slate-500">{formatWhen(v.savedAt)}</p>
                 <p className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
                   {isCurrent && <span className="rounded bg-[var(--ink)] px-1.5 py-0.5 text-white">Current</span>}
+                  {v.tailored && (
+                    <span title={v.basedOn ? `AI-tailored CV, made from ${v.basedOn}` : "AI-tailored CV"} className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
+                      Tailored
+                    </span>
+                  )}
                   <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">Saved</span>
                   {v.exportedAt && (
                     <span title={`Last exported ${formatWhen(v.exportedAt)}`} className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-800">

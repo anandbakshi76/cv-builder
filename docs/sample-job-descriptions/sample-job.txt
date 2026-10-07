@@ -1,0 +1,20 @@
+Python Developer (Graduate) - Acme Ltd
+Company: Acme Ltd
+Location: Nottingham (hybrid)
+
+About the role
+We are looking for a graduate Python developer to join our small product team building web services for logistics customers.
+
+You will
+- Build and maintain REST APIs using Python and Flask
+- Write SQL queries and work with PostgreSQL databases
+- Package services with Docker and deploy them to AWS
+- Use Git and GitHub for version control and code review
+- Write automated tests with pytest
+- Work closely with the team in an Agile / Scrum environment
+
+You have
+- Strong Python skills and an interest in web development
+- Good communication and teamwork
+- Problem solving and attention to detail
+- Experience with JavaScript or React is a bonus
