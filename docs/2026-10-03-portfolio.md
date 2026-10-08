@@ -58,3 +58,6 @@ Headless Chrome against the running app with a real CV: no horizontal scroll at 
 
 ## Ideas not built (need a decision or a backend)
 Per-project screenshots and case-study pages (the CV has no image or long-text fields for them; adding them would change the data model), a blog, analytics, a custom domain, GitHub Pages deployment (see `docs/2026-10-03-sharing.md`), and swapping the portfolio in at `/` (above).
+
+## Live address opens the portfolio
+`vercel.json` (project root) holds one temporary redirect, `/` to `/portfolio`, so the published address (deekshan-bakshi.vercel.app) opens the portfolio. Only Vercel reads it: `localhost:3000` still opens the CV builder. The builder page is therefore not linkable on the live site (it would be empty for visitors anyway). To undo, delete `vercel.json` and push.
